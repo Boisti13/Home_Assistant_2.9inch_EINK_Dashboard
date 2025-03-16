@@ -129,7 +129,7 @@ display:
       int logo_1_y = 15;
 
       // Outdoor Temperature
-      it.printf(0, 15, id(mdi_icons), "\U000F0531");
+      it.printf(0, 15, id(mdi_icons), ICON_tree);
       if (!isnan(id(outdoor_temp).state)) {
         
         it.printf(main_x, 5, id(font_big), TextAlign::RIGHT, "%.1f°C", id(outdoor_temp).state);
@@ -185,7 +185,7 @@ display:
       int main_3_y = logo_2_y - 15;
       int main_4_y = logo_2_y + 14;
 
-      it.printf(0, logo_2_y, id(mdi_icons), "\U000F02DC");
+      it.printf(0, logo_2_y, id(mdi_icons), ICON_house);
 
       if (!isnan(id(bedroom_temp).state)) {
         it.printf(main_x, main_3_y, id(font_big), TextAlign::RIGHT, "%.1f°C", id(bedroom_temp).state);
