@@ -244,35 +244,51 @@ display:
       // Default weather icon
       std::string icon = ICON_weather_sunny;  // Default to mdi-weather-cloudy
 
-      // Determine the correct weather icon based on condition
+      // Determine the correct weather icon and text based on condition
+      std::string weather_text;
+
       if (condition_next_day == "sunny") {
-        icon = ICON_weather_sunny;
+          icon = ICON_weather_sunny;
+          weather_text = "Sunny";
       } else if (condition_next_day == "clear-night") {
-        icon = ICON_weather_night;
+          icon = ICON_weather_night;
+          weather_text = "Clear Night";
       } else if (condition_next_day == "partlycloudy") {
-        icon = ICON_weather_partly_cloudy;
+          icon = ICON_weather_partly_cloudy;
+          weather_text = "Partly Cloudy";
       } else if (condition_next_day == "night-partly-cloudy") {
-        icon = ICON_weather_night_cloudy;
+          icon = ICON_weather_night_cloudy;
+          weather_text = "Partly Cloudy";
       } else if (condition_next_day == "cloudy") {
-        icon = ICON_weather_cloudy;
+          icon = ICON_weather_cloudy;
+          weather_text = "Cloudy";
       } else if (condition_next_day == "fog") {
-        icon = ICON_weather_fog;
+          icon = ICON_weather_fog;
+          weather_text = "Foggy";
       } else if (condition_next_day == "rainy") {
-        icon = ICON_weather_rainy;
+          icon = ICON_weather_rainy;
+          weather_text = "Rainy";
       } else if (condition_next_day == "snowy") {
-        icon = ICON_weather_snowy;
+          icon = ICON_weather_snowy;
+          weather_text = "Snowy";
       } else if (condition_next_day == "snowy-rainy") {
-        icon = ICON_weather_snowy_rainy;
+          icon = ICON_weather_snowy_rainy;
+          weather_text = "Snow & Rain";
       } else if (condition_next_day == "pouring") {
-        icon = ICON_weather_pouring;
+          icon = ICON_weather_pouring;
+          weather_text = "Heavy Rain";
       } else if (condition_next_day == "lightning-rainy") {
-        icon = ICON_weather_lightning_rainy;
+          icon = ICON_weather_lightning_rainy;
+          weather_text = "Thunderstorm";
+      } else {
+          weather_text = "Unknown";
       }
 
       // Print centered weather icon
       it.printf(weather_icon_x, weather_icon_y, id(weather_icons), "%s", icon.c_str());
+
       // Print centered weather condition text
-      it.printf(condition_x, 60, id(font_small), condition_next_day.c_str());
+      it.printf(condition_x, 60, id(font_small), "%s", weather_text.c_str());
     
       it.printf(190, 80, id(min_max_icons), ICON_temp_max);
       it.printf(190+12, 80, id(font_small), " %.1f°C", temperature);
