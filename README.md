@@ -1,5 +1,7 @@
 # ESPHome Configuration for E-Paper Display
 
+![20250316_101429](https://github.com/user-attachments/assets/db89b938-55b5-4abd-bded-a953400ee35b)
+
 ## Overview
 This ESPHome configuration is designed for an **ESP32-C3** microcontroller with an **E-Paper display**. It integrates with **Home Assistant** to display real-time environmental data, including temperature, humidity, CO2 levels, weather forecast, and battery voltage. Additionally, the device operates in a **deep sleep** mode to optimize power consumption.
 
