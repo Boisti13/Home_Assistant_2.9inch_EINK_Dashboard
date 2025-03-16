@@ -203,19 +203,15 @@ display:
       // Get current time
       int time_x = 0;
       int time_y = 0;
-      int am_pm_x = time_x + 65;
-      int am_pm_y = time_y;
       int date_x = time_x;
       int date_y = time_y + 25;
+
       if (id(ha_time).now().is_valid()) {
         if (id(ha_time).now().is_valid()) {
           auto time = id(ha_time).now();
     
           // Draw hours and minutes in large font
           it.strftime(time_x, time_y, id(font_medium), "%I:%M", time);
-
-          // Draw AM/PM in a smaller font, positioned next to the time
-          //it.strftime(am_pm_x, am_pm_y, id(font_small), "%p", time);
         }
         //it.strftime(date_x, date_y, id(font_small), "%d-%m", id(ha_time).now());
       }
