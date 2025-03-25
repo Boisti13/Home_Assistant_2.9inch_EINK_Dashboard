@@ -1,0 +1,110 @@
+##########################
+#  Sensors
+##########################
+
+text_sensor:
+  - platform: homeassistant
+    id: next_day_forecast_condition
+    entity_id: sensor.forecast_next_day
+    attribute: condition
+    internal: true
+  
+  - platform: homeassistant
+    id: next_hour_forecast_condition
+    entity_id: sensor.forecast_next_hour
+    attribute: condition
+    internal: true
+  
+  - platform: homeassistant
+    id: indoor_pressure_trend
+    entity_id: sensor.indoor_pressure_trend
+    name: "Indoor Pressure Trend"
+    internal: true
+
+sensor:
+  - platform: homeassistant
+    id: nextsunrise
+    entity_id: sensor.next_sunrise
+    attribute: hours
+    internal: true
+
+  - platform: homeassistant
+    id: nextsunset
+    entity_id: sensor.next_sunset
+    attribute: hours
+    internal: true
+
+  - platform: adc
+    pin: GPIO1
+    name: "Battery Voltage"
+    id: battery_voltage
+    attenuation: 0db  # Best for 0-1.1V range, but ESPHome auto-scales
+    update_interval: 18000s
+    accuracy_decimals: 2
+    filters:
+      - lambda: |-
+          float voltage = x * 3.3;  // Convert normalized value to voltage
+          return voltage;
+
+  # Temperature sensor bedroom
+  - platform: homeassistant
+    entity_id: sensor.indoor_temperature
+    id: bedroom_temp
+    accuracy_decimals: 1
+    unit_of_measurement: "°C"
+
+  # Temperature sensor outdoor
+  - platform: homeassistant
+    entity_id: sensor.indoor_aussenmodul_temperature
+    id: outdoor_temp
+    accuracy_decimals: 1
+    unit_of_measurement: "°C"
+  
+  - platform: homeassistant
+    id: outdoor_temp_min
+    entity_id: sensor.indoor_aussenmodul_temperature_min
+    internal: true
+
+  - platform: homeassistant
+    id: outdoor_temp_max
+    entity_id: sensor.indoor_aussenmodul_temperature_max
+    internal: true
+  
+  - platform: homeassistant
+    id: indoor_co2
+    entity_id: sensor.indoor_carbon_dioxide
+    internal: true 
+
+  # Humidity sensor outdoor 
+  - platform: homeassistant
+    entity_id: sensor.indoor_aussenmodul_humidity
+    id: outdoor_humidity
+    accuracy_decimals: 0
+    unit_of_measurement: "%"
+
+  - platform: homeassistant
+    id: outdoor_humidity_min
+    entity_id: sensor.indoor_aussenmodul_humidity_min
+    internal: true
+
+  - platform: homeassistant
+    id: outdoor_humidity_max
+    entity_id: sensor.indoor_aussenmodul_humidity_max
+    internal: true
+
+  - platform: homeassistant
+    entity_id: sensor.indoor_humidity
+    id: bedroom_humidity
+    accuracy_decimals: 0
+    unit_of_measurement: "%"
+  
+  # Forecast data
+  - platform: homeassistant
+    id: forecast_temperature
+    entity_id: sensor.forecast_next_day
+    attribute: temperature
+  
+  - platform: homeassistant
+    id: forecast_temperaturelow
+    entity_id: sensor.forecast_next_day
+    attribute: templow

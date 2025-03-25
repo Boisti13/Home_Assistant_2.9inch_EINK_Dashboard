@@ -1,0 +1,58 @@
+##########################
+#  Fonts and icons
+##########################
+
+# Font Definitions #file: "fonts/Ubuntu-Medium.ttf"
+font:
+  - file: "fonts/Ubuntu-Medium.ttf"
+    id: font_big
+    size: 24
+    
+  - file: "fonts/Ubuntu-Medium.ttf"
+    id: font_medium
+    size: 16
+  
+  - file: "fonts/Ubuntu-Medium.ttf"
+    id: font_small
+    size: 12
+
+  - file: "fonts/Ubuntu-Medium.ttf"
+    id: font_xs
+    size: 9
+    
+  - file: "fonts/MaterialDesignIconsDesktop.ttf"
+    id: min_max_icons
+    size: 12 # Adjust size as necessary
+    glyphs: [
+      "\U000F0143", # arrow_up
+      "\U000F0140", # arrow_down
+      #"\U000F0737", # arrow_up
+      #"\U000F072E", # arrow_down 
+      "\U000F0E03", # temp_max
+      "\U000F0E02", # temp_min
+      ]
+
+  - file: "fonts/MaterialDesignIconsDesktop.ttf"
+    id: mdi_icons
+    size: 38 # Adjust size as necessary
+    glyphs: [ 
+      "\U000F0531", # tree
+      "\U000F02DC", # house 
+      ]
+  
+  - file: "fonts/MaterialDesignIconsDesktop.ttf"
+    id: weather_icons
+    size: 40 # Adjust size as necessary
+    glyphs: [ 
+      "\U000F0599", # mdi-weather-sunny
+      "\U000F0594", # mdi-weather-night
+      "\U000F0595", # mdi-weather-partly-cloudy
+      "\U000F0F31", # mdi-weather-night-partly-cloudy
+      "\U000F0590", # mdi-weather-cloudy
+      "\U000F0591", # mdi-weather-fog
+      "\U000F0597", # mdi-weather-rainy F0597
+      "\U000F0598", # mdi-weather-snowy
+      "\U000F067F", # mdi-weather-snowy-rainy
+      "\U000F0596", # mdi-weather-pouring
+      "\U000F067E", # mdi-weather-lightning-rainy
+      ]
