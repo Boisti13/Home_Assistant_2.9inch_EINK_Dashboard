@@ -1,0 +1,505 @@
+esphome:
+  name: dash-xs-esp
+  friendly_name: dash_xs_esp
+
+esp32:
+  board: esp32-c3-devkitm-1
+  framework:
+    type: arduino
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "vvI+eP32mottz/XjyFp+f9bNb9NeROuT62Ykdq7/Mno="
+
+ota:
+  - platform: esphome
+    password: "93e5bdd898bb68afa8569d82c4c5a2fc"
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Dash-Xs-Esp Fallback Hotspot"
+    password: "jVZsph8rmgaP"
+
+captive_portal:
+    
+##########################
+#  Deep Sleep
+##########################
+
+deep_sleep:
+  id: deep_sleep_1
+  run_duration: 1min
+  sleep_duration: 15min
+  wakeup_pin: GPIO2  # Button1 wakes up device
+  wakeup_pin_mode: INVERT_WAKEUP  # Use if button pulls LOW when pressed
+
+##########################
+#  Time
+##########################
+
+time:
+  - platform: homeassistant
+    id: ha_time
+    timezone: Europe/Berlin
+    on_time:
+      - seconds: 0
+        minutes: 30
+        hours: 0
+        then:
+          - deep_sleep.enter:
+              id: deep_sleep_1
+              until: "06:00:00"
+              time_id: ha_time
+
+##########################
+#  SPI
+##########################
+
+spi:
+  clk_pin: GPIO10
+  mosi_pin: GPIO7 #DIN
+
+##########################
+#  Display / E-Ink
+##########################
+
+display:
+  - platform: waveshare_epaper
+    id: epaper_display  # Make sure this is present!
+    cs_pin: GPIO6
+    dc_pin: GPIO9
+    busy_pin: GPIO5
+    reset_pin: GPIO8
+    model: 2.90inv2-r2
+    rotation: 90°  # Vertical Display
+    update_interval: 30s
+    #update_interval: never
+    full_update_every: 30
+    reset_duration: 10ms #100ms
+    lambda: |-
+      // Min/Max Temperature Icons
+      #define ICON_arrow_up        "\U000F0143"
+      #define ICON_arrow_down      "\U000F0140"
+      #define ICON_arrow_stable    "\U000F0142"
+      //#define ICON_alt_arrow_up   "\U000F0737"
+      //#define ICON_alt_arrow_down "\U000F072E"
+      #define ICON_temp_max        "\U000F0E03"
+      #define ICON_temp_min        "\U000F0E02"
+
+      // General Icons
+      #define ICON_tree            "\U000F0531"
+      #define ICON_house           "\U000F02DC"
+
+      // Weather Icons
+      #define ICON_weather_sunny           "\U000F0599"
+      #define ICON_weather_night           "\U000F0594"
+      #define ICON_weather_partly_cloudy   "\U000F0595"
+      #define ICON_weather_night_cloudy    "\U000F0F31"
+      #define ICON_weather_cloudy          "\U000F0590"
+      #define ICON_weather_fog             "\U000F0591"
+      #define ICON_weather_rainy           "\U000F0597"
+      #define ICON_weather_snowy           "\U000F0598"
+      #define ICON_weather_snowy_rainy     "\U000F067F"
+      #define ICON_weather_pouring         "\U000F0596"
+      #define ICON_weather_lightning_rainy "\U000F067E"
+
+      
+      // Outdoor
+      int main_x = 115; //120
+      int min_max_icon_1_x= main_x + 15;
+      int min_max_value_1_x= main_x + 50;
+      int logo_1_y = 15;
+
+      // Outdoor Temperature
+      it.printf(0, 15, id(mdi_icons), ICON_tree);
+      if (!isnan(id(outdoor_temp).state)) {
+        
+        it.printf(main_x, 5, id(font_big), TextAlign::RIGHT, "%.1f°C", id(outdoor_temp).state);
+      } else {
+        it.print(main_x, 5, id(font_big), TextAlign::RIGHT, "--.-°C");
+      }
+
+      // Labels (aligned to right)
+      it.print(min_max_icon_1_x, 5, id(min_max_icons), TextAlign::RIGHT, ICON_arrow_up);
+      it.print(min_max_icon_1_x, 17, id(min_max_icons), TextAlign::RIGHT, ICON_arrow_down);
+      
+      // Values (aligned to left)
+      if (!isnan(id(outdoor_temp_max).state)) {
+        it.printf(min_max_value_1_x, 5, id(font_small), TextAlign::RIGHT, "%.1f°C", id(outdoor_temp_max).state);
+      } else {
+        it.print(min_max_value_1_x, 5, id(font_small), TextAlign::RIGHT, "--.-°C");
+      }
+
+      if (!isnan(id(outdoor_temp_min).state)) {
+        it.printf(min_max_value_1_x, 17, id(font_small), TextAlign::RIGHT, "%.1f°C", id(outdoor_temp_min).state);
+      } else {
+        it.print(min_max_value_1_x, 17, id(font_small), TextAlign::RIGHT, "--.-°C");
+      }
+      int main_2_y = 34; //5+24+5
+      int min_max_2_y = 46; //34+12
+      
+      // Outdoor Humidity
+      if (!isnan(id(outdoor_humidity).state)) {
+        it.printf(main_x, main_2_y, id(font_big), TextAlign::RIGHT, "%.0f%%", id(outdoor_humidity).state);
+      } else {
+        it.print(main_x, main_2_y, id(font_big), TextAlign::RIGHT, "--%");
+      }
+
+      // Labels Humidity (aligned to right)
+      it.print(min_max_icon_1_x, main_2_y, id(min_max_icons), TextAlign::RIGHT, ICON_arrow_up);
+      it.print(min_max_icon_1_x, min_max_2_y, id(min_max_icons), TextAlign::RIGHT, ICON_arrow_down);
+
+      // Values Humidity (aligned to left)
+      if (!isnan(id(outdoor_humidity_max).state)) {
+        it.printf(min_max_value_1_x, main_2_y, id(font_small), TextAlign::RIGHT, "%.0f%%", id(outdoor_humidity_max).state);
+      } else {
+        it.print(min_max_value_1_x, main_2_y, id(font_small), TextAlign::RIGHT, "--%");
+      }
+
+      if (!isnan(id(outdoor_humidity_min).state)) {
+        it.printf(min_max_value_1_x, min_max_2_y, id(font_small), TextAlign::RIGHT, "%.0f%%", id(outdoor_humidity_min).state);
+      } else {
+        it.print(min_max_value_1_x, min_max_2_y, id(font_small), TextAlign::RIGHT, "--%");
+      }
+
+      // Bedroom Temperature
+      int logo_2_y = 85;
+      int main_3_y = logo_2_y - 15;
+      int main_4_y = logo_2_y + 14;
+
+      it.printf(0, logo_2_y, id(mdi_icons), ICON_house);
+
+      if (!isnan(id(bedroom_temp).state)) {
+        it.printf(main_x, main_3_y, id(font_big), TextAlign::RIGHT, "%.1f°C", id(bedroom_temp).state);
+      } else {
+        it.print(main_x, main_3_y, id(font_big), TextAlign::RIGHT, "--.-°C");
+      }
+
+      // Bedroom Humidity
+      if (!isnan(id(bedroom_humidity).state)) {
+        it.printf(main_x, main_4_y, id(font_big), TextAlign::RIGHT, "%.0f%%", id(bedroom_humidity).state);
+      } else {
+        it.print(main_x, main_4_y, id(font_big), TextAlign::RIGHT, "--%");
+      }
+
+      // Get current time
+      int time_x = 0;
+      int time_y = 0;
+      int date_x = time_x;
+      int date_y = time_y + 25;
+
+      if (id(ha_time).now().is_valid()) {
+        if (id(ha_time).now().is_valid()) {
+          auto time = id(ha_time).now();
+    
+          // Draw hours and minutes in large font
+          it.strftime(time_x, time_y, id(font_xs), "%I:%M", time);
+        }
+          //it.strftime(date_x, date_y, id(font_small), "%d-%m", id(ha_time).now());
+      }
+
+      std::string condition_next_day = id(next_day_forecast_condition).state;  // Get condition from HA
+      float temperature = id(forecast_temperature).state;  // Get temperature
+      float temperaturelow = id(forecast_temperaturelow).state;  // Get temperature
+
+      int tomorrow_x = 210;  // Fixed X position for "Tomorrow"
+      int tomorrow_y = 5;  // Fixed Y position for "Tomorrow"
+      
+      int char_width_small = 6;  // Approximate width per character for 12px font
+      int icon_width = 40;  // Weather icon size from your config
+
+      // Estimate text width based on number of characters
+      int tomorrow_width = (8 * char_width_small);  // "Tomorrow" is ~8 characters long
+      int condition_text_width = condition_next_day.length() * char_width_small;
+
+      // Calculate center of "Tomorrow"
+      int tomorrow_center_x = tomorrow_x + ((tomorrow_width / 2))+5;
+
+      // Center condition text & icon relative to "Tomorrow"
+      int condition_x = tomorrow_center_x - (condition_text_width / 2);
+      int weather_icon_x = tomorrow_center_x - (icon_width / 2);
+      int weather_icon_y = 20;  // Y position for icon
+
+      // Print "Tomorrow" (fixed position)
+      it.printf(tomorrow_x, tomorrow_y, id(font_small), "Tomorrow");
+
+      // Default weather icon
+      std::string icon = ICON_weather_sunny;  // Default to mdi-weather-cloudy
+
+      // Determine the correct weather icon and text based on condition
+      std::string weather_text;
+
+      if (condition_next_day == "sunny") {
+          icon = ICON_weather_sunny;
+          weather_text = "Sunny";
+      } else if (condition_next_day == "clear-night") {
+          icon = ICON_weather_night;
+          weather_text = "Clear Night";
+      } else if (condition_next_day == "partlycloudy") {
+          icon = ICON_weather_partly_cloudy;
+          weather_text = "Partly Cloudy";
+      } else if (condition_next_day == "night-partly-cloudy") {
+          icon = ICON_weather_night_cloudy;
+          weather_text = "Partly Cloudy";
+      } else if (condition_next_day == "cloudy") {
+          icon = ICON_weather_cloudy;
+          weather_text = "Cloudy";
+      } else if (condition_next_day == "fog") {
+          icon = ICON_weather_fog;
+          weather_text = "Foggy";
+      } else if (condition_next_day == "rainy") {
+          icon = ICON_weather_rainy;
+          weather_text = "Rainy";
+      } else if (condition_next_day == "snowy") {
+          icon = ICON_weather_snowy;
+          weather_text = "Snowy";
+      } else if (condition_next_day == "snowy-rainy") {
+          icon = ICON_weather_snowy_rainy;
+          weather_text = "Snow & Rain";
+      } else if (condition_next_day == "pouring") {
+          icon = ICON_weather_pouring;
+          weather_text = "Heavy Rain";
+      } else if (condition_next_day == "lightning-rainy") {
+          icon = ICON_weather_lightning_rainy;
+          weather_text = "Thunderstorm";
+      } else {
+          weather_text = "Unknown";
+      }
+
+      // Print centered weather icon
+      it.printf(weather_icon_x, weather_icon_y, id(weather_icons), "%s", icon.c_str());
+
+      // Print centered weather condition text
+      it.printf(condition_x, 60, id(font_small), "%s", weather_text.c_str());
+
+      it.printf(190, 80, id(min_max_icons), ICON_temp_max);
+      it.printf(190+12, 80, id(font_small), " %.1f°C", temperature);
+      it.printf(245, 80, id(min_max_icons), ICON_temp_min);
+      it.printf(245+12, 80, id(font_small), " %.1f°C", temperaturelow);
+
+      char voltage_str[20];  // Buffer for the voltage string
+      snprintf(voltage_str, sizeof(voltage_str), "%.2fV", id(battery_voltage).state);
+      it.print(0, 118, id(font_xs), voltage_str);
+      
+      // Read CO2 value
+      float co2 = id(indoor_co2).state;
+
+      // Determine air quality status
+      std::string air_quality = "Unknown";
+      if (co2 < 1120) {
+        air_quality = "Good";
+      } else if (co2 >= 1120 && co2 <= 2000) {
+        air_quality = "Fair";
+      } else {
+        air_quality = "Bad";
+      }
+
+      // Format air quality inside square brackets
+      std::string air_quality_str = "[" + air_quality + "]";
+
+      // Display CO2 value and air quality
+      it.printf(min_max_icon_1_x-10, 110, id(font_small), "CO2: %.0f ppm %s", co2, air_quality_str.c_str());
+      
+      // Atmospheric pressure
+      // Fetch the text sensor value correctly
+      std::string pressure_trend = id(indoor_pressure_trend).state;  // Get condition from HA
+
+      it.printf(min_max_icon_1_x-10, 95, id(font_small), "%.0f hPa", id(atmospheric_pressure).state);
+      //it.printf(min_max_icon_1_x-10, main_3_y+10, id(font_small), "%s", pressure_trend.c_str());
+
+      const char* trend_icon = "";
+      
+      if (pressure_trend == "up") {
+        trend_icon = ICON_arrow_up;
+      } else if (pressure_trend == "down") {
+        trend_icon = ICON_arrow_down;
+      } else {
+        trend_icon = ICON_arrow_stable;
+      }
+
+      it.printf(min_max_icon_1_x +40, 98, id(min_max_icons), "%s", trend_icon);
+
+
+
+##########################
+#  Sensors
+##########################
+
+text_sensor:
+  - platform: homeassistant
+    id: next_day_forecast_condition
+    entity_id: sensor.forecast_next_day
+    attribute: condition
+    internal: true
+  
+  - platform: homeassistant
+    id: next_hour_forecast_condition
+    entity_id: sensor.forecast_next_hour
+    attribute: condition
+    internal: true
+  
+  - platform: homeassistant
+    id: indoor_pressure_trend
+    entity_id: sensor.indoor_pressure_trend
+    name: "Indoor Pressure Trend"
+    internal: true
+
+sensor:
+  - platform: homeassistant
+    id: nextsunrise
+    entity_id: sensor.next_sunrise
+    attribute: hours
+    internal: true
+
+  - platform: homeassistant
+    id: nextsunset
+    entity_id: sensor.next_sunset
+    attribute: hours
+    internal: true
+
+  - platform: adc
+    pin: GPIO1
+    name: "Battery Voltage"
+    id: battery_voltage
+    attenuation: auto
+    update_interval: 10s  # adjust as needed
+    accuracy_decimals: 2
+    filters:
+      - multiply: 3.327
+
+  # Temperature sensor bedroom
+  - platform: homeassistant
+    entity_id: sensor.indoor_temperature
+    id: bedroom_temp
+    accuracy_decimals: 1
+    unit_of_measurement: "°C"
+
+  # Temperature sensor outdoor
+  - platform: homeassistant
+    entity_id: sensor.indoor_aussenmodul_temperature
+    id: outdoor_temp
+    accuracy_decimals: 1
+    unit_of_measurement: "°C"
+  
+  - platform: homeassistant
+    id: outdoor_temp_min
+    entity_id: sensor.indoor_aussenmodul_temperature_min
+    internal: true
+
+  - platform: homeassistant
+    id: outdoor_temp_max
+    entity_id: sensor.indoor_aussenmodul_temperature_max
+    internal: true
+  
+  - platform: homeassistant
+    id: indoor_co2
+    entity_id: sensor.indoor_carbon_dioxide
+    internal: true 
+
+  # Humidity sensor outdoor 
+  - platform: homeassistant
+    entity_id: sensor.indoor_aussenmodul_humidity
+    id: outdoor_humidity
+    accuracy_decimals: 0
+    unit_of_measurement: "%"
+
+  - platform: homeassistant
+    id: outdoor_humidity_min
+    entity_id: sensor.indoor_aussenmodul_humidity_min
+    internal: true
+
+  - platform: homeassistant
+    id: outdoor_humidity_max
+    entity_id: sensor.indoor_aussenmodul_humidity_max
+    internal: true
+
+  - platform: homeassistant
+    entity_id: sensor.indoor_humidity
+    id: bedroom_humidity
+    accuracy_decimals: 0
+    unit_of_measurement: "%"
+
+  - platform: homeassistant
+    entity_id: sensor.indoor_atmospheric_pressure
+    id: atmospheric_pressure
+    accuracy_decimals: 0
+    unit_of_measurement: "hPa"
+  
+  # Forecast data
+  - platform: homeassistant
+    id: forecast_temperature
+    entity_id: sensor.forecast_next_day
+    attribute: temperature
+  
+  - platform: homeassistant
+    id: forecast_temperaturelow
+    entity_id: sensor.forecast_next_day
+    attribute: templow
+
+##########################
+#  Fonts and icons
+##########################
+
+# Font Definitions #file: "fonts/Ubuntu-Medium.ttf"
+font:
+  - file: "fonts/Ubuntu-Medium.ttf"
+    id: font_big
+    size: 24
+    
+  - file: "fonts/Ubuntu-Medium.ttf"
+    id: font_medium
+    size: 16
+  
+  - file: "fonts/Ubuntu-Medium.ttf"
+    id: font_small
+    size: 12
+
+  - file: "fonts/Ubuntu-Medium.ttf"
+    id: font_xs
+    size: 9
+    
+  - file: "fonts/MaterialDesignIconsDesktop.ttf"
+    id: min_max_icons
+    size: 14 # Adjust size as necessary
+    glyphs: [
+      "\U000F0143", # arrow_up
+      "\U000F0140", # arrow_down
+      "\U000F0142", # arrow_stable
+      #"\U000F0737", # arrow_up
+      #"\U000F072E", # arrow_down
+      "\U000F0E03", # temp_max
+      "\U000F0E02", # temp_min
+      ]
+
+  - file: "fonts/MaterialDesignIconsDesktop.ttf"
+    id: mdi_icons
+    size: 38 # Adjust size as necessary
+    glyphs: [ 
+      "\U000F0531", # tree
+      "\U000F02DC", # house 
+      ]
+  
+  - file: "fonts/MaterialDesignIconsDesktop.ttf"
+    id: weather_icons
+    size: 40 # Adjust size as necessary
+    glyphs: [ 
+      "\U000F0599", # mdi-weather-sunny
+      "\U000F0594", # mdi-weather-night
+      "\U000F0595", # mdi-weather-partly-cloudy
+      "\U000F0F31", # mdi-weather-night-partly-cloudy
+      "\U000F0590", # mdi-weather-cloudy
+      "\U000F0591", # mdi-weather-fog
+      "\U000F0597", # mdi-weather-rainy F0597
+      "\U000F0598", # mdi-weather-snowy
+      "\U000F067F", # mdi-weather-snowy-rainy
+      "\U000F0596", # mdi-weather-pouring
+      "\U000F067E", # mdi-weather-lightning-rainy
+      ]
