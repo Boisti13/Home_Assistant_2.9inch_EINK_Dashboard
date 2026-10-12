@@ -9,7 +9,7 @@ The ESP32-S3 version, as it has been running since October 2026.
 ### Added
 - **Air pressure** with a rising / falling / steady arrow (`sensor.indoor_pressure_trend`).
 - **Battery percentage** from a LiPo voltage curve, and a **warning icon** on the page below 3.5 V (`low_battery_voltage`).
-- **Low-battery notification** in Home Assistant below 3.5 V (*Dash XS: low battery* in `packages/dash_xs.yaml`).
+- **Low-battery notification** in Home Assistant below 3.5 V (*Dash XS – Low battery alert* in `packages/dash_xs.yaml`): sent once, armed again after the battery has been charged above 3.9 V (`input_boolean.dash_xs_battery_alerted`).
 - **Wake button** on GPIO2 for a fresh page at any time.
 - **!** at the bottom right when Home Assistant didn't send every value within 40 s; the page is drawn anyway with `--` for what's missing.
 - The board's RGB LED as a light in Home Assistant, and a *Restart* button.
@@ -26,6 +26,9 @@ The ESP32-S3 version, as it has been running since October 2026.
 - CO₂: *Good* below 1000 ppm, *Fair* up to 1400, *Bad* above (was 1120 / 2000); *Unknown* without data.
 - Outside values come from `sensor.virtual_outdoor_*` (24 h highs and lows from Home Assistant) instead of the Netatmo outdoor module directly.
 - The battery reading is the median of several samples, because the voltage sags while Wi-Fi connects.
+
+### Fixed
+- The low-battery notification would almost never have been sent: the device reports `unknown` at the start of most wakes, so the drop below 3.5 V came from `unknown` and was ignored. It now checks every reading. Readings that jump around 3.5 V no longer send it again and again.
 
 ### Removed
 - The old ESP32-C3 files (`esp-dash.yaml`, `esp-dash-sensors.yaml`, `fonts.yaml`, `backup.yaml`); they're in the git history.

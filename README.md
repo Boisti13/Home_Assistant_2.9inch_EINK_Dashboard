@@ -22,7 +22,7 @@ its own PCB.
 - **Tomorrow**: weather icon, condition (*Partly Cloudy*, *Rainy*, …) and high/low
 - **Battery-friendly**: wakes on every full hour, draws once, deep sleep in between — awake for about 10 seconds an hour; **no wakes at night** (last page 23:00, next 6:00)
 - **Wake button** for a fresh page at any time
-- **Battery** in the corner, with a warning icon below 3.5 V and a **notification** in Home Assistant
+- **Battery** in the corner, with a warning icon below 3.5 V and **one notification** in Home Assistant until it's charged again
 - **Never a blank page**: if Home Assistant doesn't answer within 40 s, it draws what it has and marks the page with **!**
 - **Your own sensors**: every Home Assistant entity is a substitution at the top of the config
 - E-paper keeps the page without power
@@ -83,7 +83,8 @@ so press the wake button and start the install right away.
 | Entity | What it is |
 |---|---|
 | `sensor.forecast_next_day` | tomorrow's condition (state); attributes `condition`, `temperature`, `templow`, `cloud_coverage`, `datetime` — from `weather.forecast_home`, every 30 minutes |
-| `automation.dash_xs_low_battery` | *Dash XS: low battery* — a notification when the battery drops below 3.5 V |
+| `automation.dash_xs_low_battery` | *Dash XS – Low battery alert* — one notification when the battery is below 3.5 V; after charging above 3.9 V it's armed again |
+| `input_boolean.dash_xs_battery_alerted` | on once the alert has been sent, off again after charging |
 
 **From the device**: `sensor.dash_xs_esps3_battery_voltage` (V),
 `sensor.dash_xs_esps3_battery_level` (%), `light.dash_xs_esps3_rgb_led`
