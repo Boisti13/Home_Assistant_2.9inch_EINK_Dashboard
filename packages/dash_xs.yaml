@@ -1,0 +1,60 @@
+###############################################################################
+# 2.9" e-paper dashboard (dash-xs-esps3) – Home Assistant side
+# - sensor.forecast_next_day: tomorrow's condition and high/low from
+#   weather.forecast_home, refreshed every 30 min (shown on the page)
+# - "Dash XS: low battery": notification below 3.5 V
+# https://github.com/Boisti13/Home_Assistant_2.9inch_EINK_Dashboard
+###############################################################################
+
+template:
+  - triggers:
+      - trigger: time_pattern
+        minutes: /30
+      - trigger: homeassistant
+        event: start
+      - trigger: event
+        event_type: event_template_reloaded
+    conditions:
+      - condition: not
+        conditions:
+          - condition: state
+            entity_id: weather.forecast_home
+            state: unavailable
+    actions:
+      - action: weather.get_forecasts
+        target:
+          entity_id: weather.forecast_home
+        data:
+          type: daily
+        response_variable: daily_forecast
+    sensor:
+      - name: forecast_next_day
+        unique_id: forecast_next_day
+        state: "{{ daily_forecast['weather.forecast_home'].forecast[1].condition }}"
+        icon: mdi:hours-24
+        attributes:
+          condition: "{{ daily_forecast['weather.forecast_home'].forecast[1].condition }}"
+          cloud_coverage: "{{ daily_forecast['weather.forecast_home'].forecast[1].get('cloud_coverage') }}"
+          temperature: "{{ daily_forecast['weather.forecast_home'].forecast[1].temperature }}"
+          datetime: "{{ daily_forecast['weather.forecast_home'].forecast[1].datetime }}"
+          templow: "{{ daily_forecast['weather.forecast_home'].forecast[1].templow }}"
+
+automation:
+  - id: dash_xs_low_battery
+    alias: "Dash XS: low battery"
+    description: "Notify when the e-ink dash battery drops below 3.5 V"
+    mode: single
+    triggers:
+      - trigger: numeric_state
+        entity_id: sensor.dash_xs_esps3_battery_voltage
+        below: 3.5
+    conditions:
+      # A restart/unavailable blip re-arms numeric_state; only alert on real crossings
+      - condition: template
+        value_template: "{{ trigger.from_state.state not in ['unavailable', 'unknown'] }}"
+    actions:
+      # Change to your own notifier, e.g. notify.mobile_app_<your_phone>
+      - action: notify.notify
+        data:
+          title: "Dash XS battery low"
+          message: "E-ink dash battery at {{ states('sensor.dash_xs_esps3_battery_voltage') | float | round(2) }} V. Time to charge."

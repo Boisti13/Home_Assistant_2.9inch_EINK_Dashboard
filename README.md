@@ -1,148 +1,136 @@
-# ESPHome Configuration for E-Paper Display
+# Home Assistant 2.9" e-paper dashboard
 
-![20250316_101429](https://github.com/user-attachments/assets/db89b938-55b5-4abd-bded-a953400ee35b)
+[![ESPHome](https://img.shields.io/badge/ESPHome-ESP32--S3-000000?logo=esphome)](https://esphome.io/)
+[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-package-41BDF5?logo=homeassistant&logoColor=white)](packages/dash_xs.yaml)
+[![Display](https://img.shields.io/badge/display-Waveshare%202.9%22-555555)](https://www.waveshare.com/wiki/2.9inch_e-Paper_Module_Manual)
+[![License: MIT](https://img.shields.io/github/license/Boisti13/Home_Assistant_2.9inch_EINK_Dashboard)](LICENSE)
 
-## Overview
-This ESPHome configuration is designed for an **ESP32-C3** microcontroller with an **E-Paper display**. It integrates with **Home Assistant** to display real-time environmental data, including temperature, humidity, CO2 levels, weather forecast, and battery voltage. Additionally, the device operates in a **deep sleep** mode to optimize power consumption.
+A small battery-powered e-paper display for the bedside table or the
+hallway: outside and inside temperature and humidity, the last 24 hours'
+highs and lows, tomorrow's weather, CO₂ and air pressure — all from
+[Home Assistant](https://www.home-assistant.io/). An ESP32-S3 running
+[ESPHome](https://esphome.io/) wakes once an hour, draws the page and goes
+back to deep sleep, so one charge lasts for weeks. With a 3D-printed case and
+its own PCB.
 
-## Features
-- **E-Paper Display (Waveshare 2.9-inch)**
-  - Displays indoor & outdoor temperature and humidity
-  - Displays min/max temperature values for outdoor conditions
-  - Shows battery voltage and CO2 levels with air quality indication
-  - Weather forecast for the next day with icons and temperature range
-  - Real-time clock synchronization with Home Assistant
-- **Connectivity**
-  - Wi-Fi integration with manual IP setup
-  - Home Assistant API for data exchange
-  - Over-the-air (OTA) firmware updates
-- **Power Optimization**
-  - Deep sleep enabled with a schedule to conserve power
-  - Runs for **1 minute**, then sleeps for **10 minutes**
-  - Nighttime deep sleep until 06:00 AM
+![The dashboard](https://github.com/user-attachments/assets/db89b938-55b5-4abd-bded-a953400ee35b)
 
-## Hardware Requirements
-- **ESP32-C3-DevKitM-1**
-- **Waveshare 2.9-inch E-Paper display (2.90inv2-r2 model)**
-- **Battery (if using portable mode, voltage monitoring included)**
+## Highlights
 
-## Configuration Details
-### ESPHome Setup
-```yaml
-esphome:
-  name: dash_small_esp
-  friendly_name: dash_esp
+- **Outside**: temperature and humidity, each with the highs and lows of the last 24 hours
+- **Inside**: temperature and humidity, **CO₂** with *Good* / *Fair* / *Bad*, **air pressure** with a rising/falling/steady arrow
+- **Tomorrow**: weather icon, condition (*Partly Cloudy*, *Rainy*, …) and high/low
+- **Battery-friendly**: wakes on every full hour, draws once, deep sleep in between — awake for about 10 seconds an hour; **no wakes at night** (last page 23:00, next 6:00)
+- **Wake button** for a fresh page at any time
+- **Battery** in the corner, with a warning icon below 3.5 V and a **notification** in Home Assistant
+- **Never a blank page**: if Home Assistant doesn't answer within 40 s, it draws what it has and marks the page with **!**
+- **Your own sensors**: every Home Assistant entity is a substitution at the top of the config
+- E-paper keeps the page without power
 
-esp32:
-  board: esp32-c3-devkitm-1
-  framework:
-    type: arduino
+## How it works
+
+```
+Home Assistant                               dash-xs-esps3 (ESPHome)
+sensor.virtual_outdoor_*      ──API──▶       wakes on the full hour (6:00–23:00)
+sensor.indoor_* (Netatmo)                    or on the button,
+sensor.forecast_next_day  ◀── packages/      waits until every value has arrived,
+                              dash_xs.yaml   draws the page, sleeps until the next hour
 ```
 
-### Home Assistant API & OTA
-```yaml
-api:
-  encryption:
-    key: "YOUR_ENCRYPTION_KEY"
+On each wake the device connects with a fixed IP address (no DHCP), waits
+until every Home Assistant value has arrived (usually 3 to 6 seconds after
+waking), draws the page and sleeps 4 seconds later, once the panel is done. If something is missing after 40 s
+it draws anyway, with **!** at the bottom right.
 
-ota:
-  password: "YOUR_OTA_PASSWORD"
+The sleep timer runs about 1 % fast, so a wake a few minutes before the hour
+counts for that hour (the night's sleep ends around 5:56; that page is the
+6:00 one).
+
+## Install
+
+You need Home Assistant with the **ESPHome Device Builder** app (add-on),
+the hardware below and a USB-C cable.
+
+| Step | What to do |
+|---|---|
+| **1. Package** | Turn on packages in `configuration.yaml` (`homeassistant: packages: !include_dir_named packages`), copy [`packages/dash_xs.yaml`](packages/dash_xs.yaml) to `/config/packages/`, set your notifier in the low-battery automation, check the configuration and reload *All YAML configuration*. It needs a `weather.forecast_home` entity (the Met.no integration makes one). |
+| **2. Secrets** | Copy the keys from [`esphome/secrets.example.yaml`](esphome/secrets.example.yaml) into `/config/esphome/secrets.yaml` and fill them in — including a fixed IP address, which you also reserve on your router. |
+| **3. Config** | Copy [`esphome/dash-xs-esps3.yaml`](esphome/dash-xs-esps3.yaml) and the [`fonts/`](esphome/fonts) folder into `/config/esphome/`. Point the substitutions at the top to your own sensors. |
+| **4. Flash** | In the ESPHome Device Builder: *dash-xs-esps3 → Install → Plug into this computer* the first time, over Wi-Fi after that. |
+| **5. Adopt** | The device shows up under *Settings → Devices & services*. |
+
+**Updating over Wi-Fi**: the device is only awake for a few seconds an hour,
+so press the wake button and start the install right away.
+
+## What's on the page
+
+| Where | What | Entity (substitution) |
+|---|---|---|
+| top left | time of this page | Home Assistant time |
+| left, tree icon | outside temperature, 24 h high/low | `outdoor_temperature`, `outdoor_temperature_max`, `outdoor_temperature_min` |
+| | outside humidity, 24 h high/low | `outdoor_humidity`, `outdoor_humidity_max`, `outdoor_humidity_min` |
+| left, house icon | inside temperature and humidity | `indoor_temperature`, `indoor_humidity` |
+| right | *Tomorrow*: icon, condition, high/low | `forecast_next_day` (from the package) |
+| bottom middle | air pressure with trend arrow | `indoor_pressure`, `indoor_pressure_trend` (`up` / `down` / `stable`) |
+| | CO₂ — *Good* below 1000 ppm, *Fair* up to 1400, *Bad* above | `indoor_co2` |
+| bottom left | battery %, warning icon below 3.5 V | measured on the device |
+| bottom right | **!** when some values didn't arrive in time | |
+
+## Home Assistant entities
+
+**From the package**:
+
+| Entity | What it is |
+|---|---|
+| `sensor.forecast_next_day` | tomorrow's condition (state); attributes `condition`, `temperature`, `templow`, `cloud_coverage`, `datetime` — from `weather.forecast_home`, every 30 minutes |
+| `automation.dash_xs_low_battery` | *Dash XS: low battery* — a notification when the battery drops below 3.5 V |
+
+**From the device**: `sensor.dash_xs_esps3_battery_voltage` (V),
+`sensor.dash_xs_esps3_battery_level` (%), `light.dash_xs_esps3_rgb_led`
+(the board's LED), `button.dash_xs_esps3_restart_esp`.
+
+## Battery
+
+Deep sleep between the hourly wakes and short wakes keep the drain low: in
+October 2026 the battery dropped from 4.11 V to 4.03 V (about 85 %) in a week.
+The voltage is read on GPIO1 through a divider; the percentage follows a LiPo
+curve (3.30 V = 0 %, 3.68 V = 10 %, 3.82 V = 50 %, 4.20 V = 100 %).
+
+## Hardware
+
+| | |
+|---|---|
+| Board | ESP32-S3 (ESPHome board `esp32-s3-devkitc-1`), WS2812 LED on GPIO48 |
+| Display | Waveshare 2.9" e-paper V2, 296×128 (`2.90inv2-r2`), landscape — SPI: CLK GPIO10, DIN GPIO7, CS GPIO6, DC GPIO9, BUSY GPIO5, RST GPIO8 |
+| Button | GPIO2 to ground, wakes the device |
+| Battery | LiPo, voltage on GPIO1 through a divider (factor 3.327, calibrated) |
+| PCB | schematic, Gerber and EasyEDA files in [`PCB/`](PCB) — drawn for the first version with an ESP32-C3; the ESP32-S3 version uses the same GPIOs |
+
+## Repository layout
+
+```
+esphome/
+  dash-xs-esps3.yaml        # device config: page, wake cycle, deep sleep, sensors
+  secrets.example.yaml
+  fonts/                    # Ubuntu Medium, Material Design Icons
+packages/
+  dash_xs.yaml              # tomorrow's forecast, low-battery notification
+PCB/                        # schematic, Gerber, EasyEDA project
+3D Files/                   # case
 ```
 
-### Wi-Fi Configuration
-```yaml
-wifi:
-  ssid: !secret wifi_ssid
-  password: !secret wifi_password
-  fast_connect: true
-  manual_ip:
-    static_ip: 192.168.178.70
-    gateway: 192.168.178.1
-    subnet: 255.255.255.0
-  ap:
-    ssid: "Esp-Dash Fallback Hotspot"
-    password: "WW5yGpGDsNge"
+## Development
+
+`main` holds released versions, `dev` is where work happens. Changes go to
+`dev`, are tested on the real device and merged to `main` with a release.
+Every change gets an entry in [CHANGELOG.md](CHANGELOG.md). Validate the
+config without a device:
+
+```bash
+esphome config esphome/dash-xs-esps3.yaml
 ```
-
-### Deep Sleep Mode
-```yaml
-deep_sleep:
-  id: deep_sleep_1
-  run_duration: 1min
-  sleep_duration: 10min
-```
-
-### Time Synchronization
-```yaml
-time:
-  - platform: homeassistant
-    id: ha_time
-    timezone: Europe/Berlin
-    on_time:
-      - seconds: 0
-        minutes: 30
-        hours: 0
-        then:
-          - deep_sleep.enter:
-              id: deep_sleep_1
-              until: "06:00:00"
-              time_id: ha_time
-```
-
-### Display Configuration
-```yaml
-display:
-  - platform: waveshare_epaper
-    id: epaper_display
-    cs_pin: GPIO6
-    dc_pin: GPIO9
-    busy_pin: GPIO5
-    reset_pin: GPIO8
-    model: 2.90inv2-r2
-    rotation: 90°
-    update_interval: 20s
-    full_update_every: 30
-    reset_duration: 100ms
-    lambda: |-
-      it.printf(0, 15, id(mdi_icons), "\U000F0531");
-```
-
-### Sensors
-```yaml
-sensor:
-  - platform: homeassistant
-    id: outdoor_temp
-    entity_id: sensor.indoor_aussenmodul_temperature
-    accuracy_decimals: 1
-    unit_of_measurement: "°C"
-  - platform: homeassistant
-    id: outdoor_humidity
-    entity_id: sensor.indoor_aussenmodul_humidity
-    accuracy_decimals: 0
-    unit_of_measurement: "%"
-```
-
-## Installation Guide
-1. **Prepare the ESP32-C3**
-   - Flash ESPHome firmware using `esphome-flasher` or ESPHome dashboard.
-   - Ensure your Wi-Fi credentials are set correctly in `secrets.yaml`.
-
-2. **Home Assistant Integration**
-   - Navigate to `Settings -> Devices & Services`.
-   - Click `Add Integration` and search for ESPHome.
-   - Add the ESP device using the assigned IP `192.168.178.70`.
-
-3. **OTA Updates**
-   - Once the device is connected, you can push updates wirelessly using:
-     ```sh
-     esphome run dash_small_esp.yaml --upload-port <DEVICE_IP>
-     ```
-
-## Notes
-- Ensure **ESPHome and Home Assistant** are running the latest versions.
-- The ESP32 operates on **deep sleep mode** for power efficiency.
-- The E-Paper display only **updates every 20 seconds** to reduce wear.
-- Fonts and icons are loaded from the `fonts/` directory.
 
 ## License
-This project is licensed under the MIT License. Contributions and modifications are welcome!
+
+[MIT](LICENSE). Ubuntu font under the Ubuntu Font Licence, Material Design
+Icons under the Apache License 2.0.
