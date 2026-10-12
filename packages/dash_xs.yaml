@@ -1,0 +1,99 @@
+###############################################################################
+# 2.9" e-paper dashboard (dash-xs-esps3) – Home Assistant side
+# - sensor.forecast_next_day: tomorrow's condition and high/low from
+#   weather.forecast_home, refreshed every 30 min (shown on the page)
+# - input_boolean.dash_xs_keep_awake: keeps the dash awake for OTA updates
+# - "Dash XS – Low battery alert": one notification below 3.5 V, re-armed
+#   after charging above 3.9 V (input_boolean.dash_xs_battery_alerted)
+# https://github.com/Boisti13/Home_Assistant_2.9inch_EINK_Dashboard
+###############################################################################
+
+template:
+  - triggers:
+      - trigger: time_pattern
+        minutes: /30
+      - trigger: homeassistant
+        event: start
+      - trigger: event
+        event_type: event_template_reloaded
+    conditions:
+      - condition: not
+        conditions:
+          - condition: state
+            entity_id: weather.forecast_home
+            state: unavailable
+    actions:
+      - action: weather.get_forecasts
+        target:
+          entity_id: weather.forecast_home
+        data:
+          type: daily
+        response_variable: daily_forecast
+    sensor:
+      - name: forecast_next_day
+        unique_id: forecast_next_day
+        state: "{{ daily_forecast['weather.forecast_home'].forecast[1].condition }}"
+        icon: mdi:hours-24
+        attributes:
+          condition: "{{ daily_forecast['weather.forecast_home'].forecast[1].condition }}"
+          cloud_coverage: "{{ daily_forecast['weather.forecast_home'].forecast[1].get('cloud_coverage') }}"
+          temperature: "{{ daily_forecast['weather.forecast_home'].forecast[1].temperature }}"
+          datetime: "{{ daily_forecast['weather.forecast_home'].forecast[1].datetime }}"
+          templow: "{{ daily_forecast['weather.forecast_home'].forecast[1].templow }}"
+
+input_boolean:
+  # On = the dash stays awake (for OTA updates); off = back to sleep at once.
+  # Off by default: it restores its last state after a restart.
+  dash_xs_keep_awake:
+    name: "Dash XS keep awake"
+    icon: mdi:sleep-off
+
+  # On once the low-battery alert has been sent; off again after charging
+  dash_xs_battery_alerted:
+    name: "Dash XS battery alert sent"
+    icon: mdi:battery-alert-variant-outline
+
+automation:
+  - id: dash_xs_low_battery
+    alias: "Dash XS – Low battery alert"
+    description: >-
+      Notify once when the e-ink dash battery is below 3.5 V; re-arm after it
+      has been charged above 3.9 V. The device sends 'unknown' at the start of
+      most wakes, so this checks every reading instead of waiting for a
+      crossing (a numeric_state trigger would fire on unknown → 3.49 only).
+    mode: queued
+    triggers:
+      - trigger: state
+        entity_id: sensor.dash_xs_battery_voltage
+        id: reading
+      - trigger: numeric_state
+        entity_id: sensor.dash_xs_battery_voltage
+        above: 3.9
+        id: charged
+    actions:
+      - choose:
+          - conditions:
+              - condition: trigger
+                id: charged
+            sequence:
+              - action: input_boolean.turn_off
+                target:
+                  entity_id: input_boolean.dash_xs_battery_alerted
+          - conditions:
+              - condition: trigger
+                id: reading
+              - condition: numeric_state
+                entity_id: sensor.dash_xs_battery_voltage
+                below: 3.5
+              - condition: state
+                entity_id: input_boolean.dash_xs_battery_alerted
+                state: "off"
+            sequence:
+              - action: input_boolean.turn_on
+                target:
+                  entity_id: input_boolean.dash_xs_battery_alerted
+              # Change to your own notifier, e.g. notify.mobile_app_<your_phone>
+              - action: notify.notify
+                data:
+                  title: "Dash XS battery low"
+                  message: "E-ink dash battery at {{ states('sensor.dash_xs_battery_voltage') | float | round(2) }} V. Time to charge."
