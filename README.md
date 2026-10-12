@@ -1,5 +1,6 @@
 # Home Assistant 2.9" e-paper dashboard
 
+[![Latest release](https://img.shields.io/github/v/release/Boisti13/Home_Assistant_2.9inch_EINK_Dashboard?label=release)](https://github.com/Boisti13/Home_Assistant_2.9inch_EINK_Dashboard/releases/latest)
 [![ESPHome](https://img.shields.io/badge/ESPHome-ESP32--S3-000000?logo=esphome)](https://esphome.io/)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-package-41BDF5?logo=homeassistant&logoColor=white)](packages/dash_xs.yaml)
 [![Display](https://img.shields.io/badge/display-Waveshare%202.9%22-555555)](https://www.waveshare.com/wiki/2.9inch_e-Paper_Module_Manual)

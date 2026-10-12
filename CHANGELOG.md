@@ -4,6 +4,8 @@ All notable changes, newest first. Versions follow [semantic versioning](https:/
 
 ## Unreleased
 
+## v2.0.0 — 2026-10-12
+
 The ESP32-S3 version, as it has been running since October 2026.
 
 ### Added
