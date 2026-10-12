@@ -95,11 +95,10 @@ sleep at once. Uploads are encrypted with the API key.
 | `automation.dash_xs_low_battery` | *Dash XS – Low battery alert* — one notification when the battery is below 3.5 V; after charging above 3.9 V it's armed again |
 | `input_boolean.dash_xs_battery_alerted` | on once the alert has been sent, off again after charging |
 
-**From the device** (*Dash XS*): `sensor.dash_xs_esps3_battery_voltage` (V),
-`sensor.dash_xs_esps3_battery_level` (%), *Wi-Fi signal* (dBm), *Wake:
-connected after* and *Wake: total* (seconds per wake, sent right before
-sleep), `light.dash_xs_esps3_rgb_led` (the board's LED),
-`button.dash_xs_esps3_restart_esp`.
+**From the device** (*Dash XS*): `sensor.dash_xs_battery_voltage` (V),
+`sensor.dash_xs_battery_level` (%), `sensor.dash_xs_wi_fi_signal` (dBm), `sensor.dash_xs_wake_connected_after`
+and `sensor.dash_xs_wake_total` (seconds per wake, sent right before sleep), `light.dash_xs_rgb_led` (the board's LED),
+`button.dash_xs_restart_esp`.
 
 ## Battery
 

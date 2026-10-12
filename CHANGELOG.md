@@ -28,7 +28,7 @@ The ESP32-S3 version, as it has been running since October 2026.
 - Time of the page in 24-hour format, small, at the top left.
 - CO₂: *Good* below 1000 ppm, *Fair* up to 1200, *Bad* above (was 1120 / 2000) — adjustable with `co2_fair` / `co2_bad`; *Unknown* without data.
 - **Without Home Assistant the last page stays**: when the dash can't connect within 40 s it goes back to sleep without drawing, instead of replacing a good page with dashes.
-- Device name *Dash XS* (was *dash_xs_esps3*); existing entity IDs stay the same.
+- Device name *Dash XS* (was *dash_xs_esps3*); entity IDs start with `dash_xs_` (were `dash_xs_esps3_`), e.g. `sensor.dash_xs_battery_voltage`.
 - Outside values come from `sensor.virtual_outdoor_*` (24 h highs and lows from Home Assistant) instead of the Netatmo outdoor module directly.
 - The battery reading is the median of several samples, because the voltage sags while Wi-Fi connects.
 

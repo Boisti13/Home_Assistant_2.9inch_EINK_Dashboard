@@ -64,10 +64,10 @@ automation:
     mode: queued
     triggers:
       - trigger: state
-        entity_id: sensor.dash_xs_esps3_battery_voltage
+        entity_id: sensor.dash_xs_battery_voltage
         id: reading
       - trigger: numeric_state
-        entity_id: sensor.dash_xs_esps3_battery_voltage
+        entity_id: sensor.dash_xs_battery_voltage
         above: 3.9
         id: charged
     actions:
@@ -83,7 +83,7 @@ automation:
               - condition: trigger
                 id: reading
               - condition: numeric_state
-                entity_id: sensor.dash_xs_esps3_battery_voltage
+                entity_id: sensor.dash_xs_battery_voltage
                 below: 3.5
               - condition: state
                 entity_id: input_boolean.dash_xs_battery_alerted
@@ -96,4 +96,4 @@ automation:
               - action: notify.notify
                 data:
                   title: "Dash XS battery low"
-                  message: "E-ink dash battery at {{ states('sensor.dash_xs_esps3_battery_voltage') | float | round(2) }} V. Time to charge."
+                  message: "E-ink dash battery at {{ states('sensor.dash_xs_battery_voltage') | float | round(2) }} V. Time to charge."
