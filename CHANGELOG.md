@@ -15,7 +15,10 @@ The ESP32-S3 version, as it has been running since October 2026.
 - The board's RGB LED as a light in Home Assistant, and a *Restart* button.
 - **Home Assistant package** `packages/dash_xs.yaml` with `sensor.forecast_next_day` (tomorrow's condition and high/low from `weather.forecast_home`).
 - Every Home Assistant entity is a **substitution** at the top of the config.
+- **Keep awake** (`input_boolean.dash_xs_keep_awake`, off by default) for updates over Wi-Fi: while it's on the dash doesn't sleep; switching it off sends it back to sleep at once.
+- **Wi-Fi signal** and **wake time** sensors (*Wake: connected after*, *Wake: total*), sent right before each sleep.
 - `secrets.example.yaml`; README with install steps, page layout, entities, battery and hardware.
+- A rendered preview of the page (`docs/preview.png`, drawn by `tools/render_preview.py`).
 
 ### Changed
 - **ESP32-S3** instead of ESP32-C3, ESP-IDF instead of Arduino. Same GPIOs, so the PCB still fits.
@@ -23,7 +26,9 @@ The ESP32-S3 version, as it has been running since October 2026.
 - **No wakes from 23:00 to 6:00**: the last page is drawn at 23:00, the next at 6:00.
 - The page is drawn once per wake instead of every 20 seconds.
 - Time of the page in 24-hour format, small, at the top left.
-- CO₂: *Good* below 1000 ppm, *Fair* up to 1400, *Bad* above (was 1120 / 2000); *Unknown* without data.
+- CO₂: *Good* below 1000 ppm, *Fair* up to 1200, *Bad* above (was 1120 / 2000) — adjustable with `co2_fair` / `co2_bad`; *Unknown* without data.
+- **Without Home Assistant the last page stays**: when the dash can't connect within 40 s it goes back to sleep without drawing, instead of replacing a good page with dashes.
+- Device name *Dash XS* (was *dash_xs_esps3*); existing entity IDs stay the same.
 - Outside values come from `sensor.virtual_outdoor_*` (24 h highs and lows from Home Assistant) instead of the Netatmo outdoor module directly.
 - The battery reading is the median of several samples, because the voltage sags while Wi-Fi connects.
 
@@ -34,9 +39,11 @@ The ESP32-S3 version, as it has been running since October 2026.
 - The old ESP32-C3 files (`esp-dash.yaml`, `esp-dash-sensors.yaml`, `fonts.yaml`, `backup.yaml`); they're in the git history.
 
 ### Under the hood
-- API key, OTA password, hotspot password and the fixed IP address come from `secrets.yaml`. The keys that used to be in the repository are no longer used by any device.
+- API key, hotspot password and the fixed IP address come from `secrets.yaml`. The keys that used to be in the repository are no longer used by any device.
 - Fonts moved to `esphome/fonts/`.
 - `channel_colors` instead of the deprecated `rgb_order` for the LED.
+- OTA uploads are encrypted with the API key instead of using a separate password (saves about 3.5 KB of flash and RAM).
+- The page is drawn once per wake, also while Keep awake is on.
 
 ## 2025-03 — first version (ESP32-C3, not tagged)
 

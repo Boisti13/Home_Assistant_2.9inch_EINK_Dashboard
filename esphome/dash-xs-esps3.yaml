@@ -6,6 +6,9 @@
 substitutions:
   # Battery alert icon on the page below this voltage
   low_battery_voltage: "3.50"
+  # CO2 air quality: Good below co2_fair, Fair up to co2_bad, Bad above (ppm)
+  co2_fair: "1000"
+  co2_bad: "1200"
   # Home Assistant entities shown on the page
   outdoor_temperature: sensor.virtual_outdoor_temperature
   outdoor_humidity: sensor.virtual_outdoor_humidity
@@ -20,22 +23,32 @@ substitutions:
   indoor_pressure_trend: sensor.indoor_pressure_trend
   # Made by packages/dash_xs.yaml
   forecast_next_day: sensor.forecast_next_day
+  keep_awake: input_boolean.dash_xs_keep_awake
 
 esphome:
   name: dash-xs-esps3
-  friendly_name: dash_xs_esps3
+  friendly_name: Dash XS
   on_boot:
     priority: 600
     then:
       - delay: 40s
       - if:
           condition:
-            not:
-              script.is_running: early_sleep_after_display
+            lambda: "return !id(page_drawn);"
           then:
-            - logger.log: "⌛ Timeout waiting for HA data. Drawing with what we have."
-            - lambda: 'id(data_incomplete) = true;'
-            - script.execute: early_sleep_after_display
+            - if:
+                condition:
+                  api.connected:
+                then:
+                  - logger.log: "⌛ Timeout waiting for HA data. Drawing with what we have."
+                  - lambda: 'id(data_incomplete) = true;'
+                  - script.execute: early_sleep_after_display
+                else:
+                  # A page of dashes is worse than the last good one
+                  - logger.log:
+                      level: WARN
+                      format: "No connection to Home Assistant, keeping the old page"
+                  - script.execute: go_to_sleep
 
 esp32:
   board: esp32-s3-devkitc-1
@@ -50,10 +63,13 @@ logger:
 api:
   encryption:
     key: !secret dash_xs_key
+  on_client_connected:
+    - lambda: "if (id(connected_ms) == 0) id(connected_ms) = millis();"
 
 ota:
   - platform: esphome
-    password: !secret dash_xs_ota_password
+    # Uploads are encrypted with the api key; no extra password
+    encryption: {}
 
 wifi:
   ssid: !secret wifi_ssid
@@ -104,6 +120,14 @@ time:
 #  Globals
 ##########################
 globals:
+  # The page has been drawn on this wake (once only, also with Keep awake on)
+  - id: page_drawn
+    type: bool
+    initial_value: 'false'
+  # millis() when Home Assistant connected, for "Wake: connected after"
+  - id: connected_ms
+    type: uint32_t
+    initial_value: '0'
   - id: data_incomplete
     type: bool
     initial_value: 'false'
@@ -156,27 +180,48 @@ globals:
 script:
   - id: early_sleep_after_display
     then:
+      - lambda: "id(page_drawn) = true;"
       - logger.log: "🖼️ Refreshing display."
       - component.update: epaper_display
       - delay: 4s  # let the panel finish its full refresh before power-down
-      - deep_sleep.enter:
-          id: deep_sleep_1
-          # Wake ~30s after the next full hour. Last update 23:00, next 06:00.
-          # RTC runs ~1% fast, so an early wake (<10 min before the hour)
-          # counts as that hour's update and sleeps through to the next one.
-          sleep_duration: !lambda |-
-            auto t = id(ha_time).now();
-            if (!t.is_valid()) return 60 * 60 * 1000;
-            int now_s = t.hour * 3600 + t.minute * 60 + t.second;
-            int target = (now_s / 3600 + 1) * 3600 + 30;
-            if (target - now_s < 600) target += 3600;
-            if ((target / 3600) % 24 < 6) {
-              target = 6 * 3600 + 30;
-              if (target <= now_s) target += 86400;
-            }
-            uint32_t dur = target - now_s;
-            ESP_LOGI("main", "🛌 Sleeping %u min", (unsigned) (dur / 60));
-            return dur * 1000;
+      - script.execute: go_to_sleep
+
+  - id: go_to_sleep
+    mode: single
+    then:
+      - if:
+          condition:
+            binary_sensor.is_on: keep_awake
+          then:
+            - logger.log: "☕ Keep awake is on, staying awake"
+            - deep_sleep.prevent: deep_sleep_1
+          else:
+            # Report how long this wake took, then give the API a moment to send it
+            - sensor.template.publish:
+                id: wake_connected
+                state: !lambda "return id(connected_ms) / 1000.0f;"
+            - sensor.template.publish:
+                id: wake_total
+                state: !lambda "return millis() / 1000.0f;"
+            - delay: 300ms
+            - deep_sleep.enter:
+                id: deep_sleep_1
+                # Wake ~30s after the next full hour. Last update 23:00, next 06:00.
+                # RTC runs ~1% fast, so an early wake (<10 min before the hour)
+                # counts as that hour's update and sleeps through to the next one.
+                sleep_duration: !lambda |-
+                  auto t = id(ha_time).now();
+                  if (!t.is_valid()) return 60 * 60 * 1000;
+                  int now_s = t.hour * 3600 + t.minute * 60 + t.second;
+                  int target = (now_s / 3600 + 1) * 3600 + 30;
+                  if (target - now_s < 600) target += 3600;
+                  if ((target / 3600) % 24 < 6) {
+                    target = 6 * 3600 + 30;
+                    if (target <= now_s) target += 86400;
+                  }
+                  uint32_t dur = target - now_s;
+                  ESP_LOGI("main", "🛌 Sleeping %u min", (unsigned) (dur / 60));
+                  return dur * 1000;
 
 ##########################
 #  SPI
@@ -199,7 +244,7 @@ display:
     reset_pin: GPIO8
     model: 2.90inv2-r2
     rotation: 90°  # landscape, 296x128
-    update_interval: never  # only redrawn by on_boot fallback / early_sleep script
+    update_interval: never  # drawn once per wake by early_sleep_after_display
     reset_duration: 10ms
     lambda: |-
       // Min/Max Temperature Icons
@@ -422,9 +467,9 @@ display:
       std::string air_quality;
       if (isnan(co2)) {
         air_quality = "Unknown";
-      } else if (co2 < 1000) {
+      } else if (co2 < ${co2_fair}) {
         air_quality = "Good";
-      } else if (co2 <= 1400) {
+      } else if (co2 <= ${co2_bad}) {
         air_quality = "Fair";
       } else {
         air_quality = "Bad";
@@ -486,8 +531,9 @@ interval:
               id(data_pressure_trend) &&
               id(data_co2) &&
               id(data_pressure) &&
+              id(keep_awake).has_state() &&
               id(ha_time).now().is_valid()) {
-            if (id(early_sleep_after_display).is_running()) return;
+            if (id(page_drawn)) return;
             ESP_LOGI("main", "✅ All HA sensors ready. Triggering early sleep.");
             id(early_sleep_after_display).execute();
           } else {
@@ -593,6 +639,33 @@ sensor:
           }
           return 100.0f;
 
+  - platform: wifi_signal
+    id: wifi_rssi
+    name: "Wi-Fi signal"
+    update_interval: 60s
+
+  # How long each wake takes: until Home Assistant connected, and in total
+  # until deep sleep. Published right before going to sleep.
+  - platform: template
+    id: wake_connected
+    name: "Wake: connected after"
+    unit_of_measurement: s
+    accuracy_decimals: 1
+    state_class: measurement
+    entity_category: diagnostic
+    icon: mdi:timer-outline
+    update_interval: never
+
+  - platform: template
+    id: wake_total
+    name: "Wake: total"
+    unit_of_measurement: s
+    accuracy_decimals: 1
+    state_class: measurement
+    entity_category: diagnostic
+    icon: mdi:timer-sand
+    update_interval: never
+
   - platform: homeassistant
     id: outdoor_temp
     entity_id: ${outdoor_temperature}
@@ -682,6 +755,22 @@ sensor:
     on_value:
       then:
         - lambda: 'id(data_pressure) = true;'
+
+binary_sensor:
+  # input_boolean.dash_xs_keep_awake (packages/dash_xs.yaml): on = don't
+  # sleep, for OTA updates. Switching it off sends the device back to sleep.
+  - platform: homeassistant
+    id: keep_awake
+    entity_id: ${keep_awake}
+    # on_state skips the initial state, so this only fires on a real switch
+    on_state:
+      - if:
+          condition:
+            lambda: "return x;"
+          then:
+            - deep_sleep.prevent: deep_sleep_1
+          else:
+            - script.execute: go_to_sleep
 
 text_sensor:
   - platform: homeassistant

@@ -2,6 +2,7 @@
 # 2.9" e-paper dashboard (dash-xs-esps3) – Home Assistant side
 # - sensor.forecast_next_day: tomorrow's condition and high/low from
 #   weather.forecast_home, refreshed every 30 min (shown on the page)
+# - input_boolean.dash_xs_keep_awake: keeps the dash awake for OTA updates
 # - "Dash XS – Low battery alert": one notification below 3.5 V, re-armed
 #   after charging above 3.9 V (input_boolean.dash_xs_battery_alerted)
 # https://github.com/Boisti13/Home_Assistant_2.9inch_EINK_Dashboard
@@ -41,6 +42,12 @@ template:
           templow: "{{ daily_forecast['weather.forecast_home'].forecast[1].templow }}"
 
 input_boolean:
+  # On = the dash stays awake (for OTA updates); off = back to sleep at once.
+  # Off by default: it restores its last state after a restart.
+  dash_xs_keep_awake:
+    name: "Dash XS keep awake"
+    icon: mdi:sleep-off
+
   # On once the low-battery alert has been sent; off again after charging
   dash_xs_battery_alerted:
     name: "Dash XS battery alert sent"

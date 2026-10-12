@@ -23,5 +23,9 @@ The 2.9" e-paper dashboard (device `dash-xs-esps3`, ESP32-S3).
   `secrets.yaml` of dummy values (the API key must be real base64, not all
   zeros): `~/.venvs/esphome/Scripts/esphome config dash-xs-esps3.yaml`. The
   owner compiles and flashes through the ESPHome app.
+- Layout changes: update `tools/render_preview.py` to match and redraw
+  `docs/preview.png` (`python tools/render_preview.py`, needs Pillow).
+- OTA: the owner turns on `input_boolean.dash_xs_keep_awake` before
+  flashing; uploads use the API key (no OTA password since 2026-10-12).
 - Public repo: no secrets, IPs or keys in committed files. Old keys in the
   git history (2025) are no longer used by any device.

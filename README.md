@@ -13,7 +13,9 @@ highs and lows, tomorrow's weather, CO₂ and air pressure — all from
 back to deep sleep, so one charge lasts for weeks. With a 3D-printed case and
 its own PCB.
 
-![The dashboard](https://github.com/user-attachments/assets/db89b938-55b5-4abd-bded-a953400ee35b)
+<p align="center"><img src="docs/preview.png" alt="The page, rendered" width="600"></p>
+
+<p align="center"><img src="https://github.com/user-attachments/assets/db89b938-55b5-4abd-bded-a953400ee35b" alt="The dashboard in its case" width="420"></p>
 
 ## Highlights
 
@@ -23,7 +25,9 @@ its own PCB.
 - **Battery-friendly**: wakes on every full hour, draws once, deep sleep in between — awake for about 10 seconds an hour; **no wakes at night** (last page 23:00, next 6:00)
 - **Wake button** for a fresh page at any time
 - **Battery** in the corner, with a warning icon below 3.5 V and **one notification** in Home Assistant until it's charged again
-- **Never a blank page**: if Home Assistant doesn't answer within 40 s, it draws what it has and marks the page with **!**
+- **Never a blank page**: if some values are missing after 40 s, it draws what it has and marks the page with **!**; if Home Assistant can't be reached at all, the last page stays
+- **Keep awake** switch in Home Assistant for updates over Wi-Fi; switching it off sends the dash straight back to sleep
+- **Wi-Fi signal and wake times** in Home Assistant, to see when wakes get slow
 - **Your own sensors**: every Home Assistant entity is a substitution at the top of the config
 - E-paper keeps the page without power
 
@@ -40,7 +44,9 @@ sensor.forecast_next_day  ◀── packages/      waits until every value has a
 On each wake the device connects with a fixed IP address (no DHCP), waits
 until every Home Assistant value has arrived (usually 3 to 6 seconds after
 waking), draws the page and sleeps 4 seconds later, once the panel is done. If something is missing after 40 s
-it draws anyway, with **!** at the bottom right.
+it draws anyway, with **!** at the bottom right. Without a connection to
+Home Assistant it doesn't draw at all — the last page stays on the screen —
+and tries again at the next hour.
 
 The sleep timer runs about 1 % fast, so a wake a few minutes before the hour
 counts for that hour (the night's sleep ends around 5:56; that page is the
@@ -59,8 +65,10 @@ the hardware below and a USB-C cable.
 | **4. Flash** | In the ESPHome Device Builder: *dash-xs-esps3 → Install → Plug into this computer* the first time, over Wi-Fi after that. |
 | **5. Adopt** | The device shows up under *Settings → Devices & services*. |
 
-**Updating over Wi-Fi**: the device is only awake for a few seconds an hour,
-so press the wake button and start the install right away.
+**Updating over Wi-Fi**: turn on **Dash XS keep awake**
+(`input_boolean.dash_xs_keep_awake`), press the wake button (or wait for the
+full hour), install, then turn *Keep awake* off again — the dash goes back to
+sleep at once. Uploads are encrypted with the API key.
 
 ## What's on the page
 
@@ -72,7 +80,7 @@ so press the wake button and start the install right away.
 | left, house icon | inside temperature and humidity | `indoor_temperature`, `indoor_humidity` |
 | right | *Tomorrow*: icon, condition, high/low | `forecast_next_day` (from the package) |
 | bottom middle | air pressure with trend arrow | `indoor_pressure`, `indoor_pressure_trend` (`up` / `down` / `stable`) |
-| | CO₂ — *Good* below 1000 ppm, *Fair* up to 1400, *Bad* above | `indoor_co2` |
+| | CO₂ — *Good* below 1000 ppm, *Fair* up to 1200, *Bad* above (`co2_fair`, `co2_bad`) | `indoor_co2` |
 | bottom left | battery %, warning icon below 3.5 V | measured on the device |
 | bottom right | **!** when some values didn't arrive in time | |
 
@@ -83,12 +91,15 @@ so press the wake button and start the install right away.
 | Entity | What it is |
 |---|---|
 | `sensor.forecast_next_day` | tomorrow's condition (state); attributes `condition`, `temperature`, `templow`, `cloud_coverage`, `datetime` — from `weather.forecast_home`, every 30 minutes |
+| `input_boolean.dash_xs_keep_awake` | on = the dash doesn't go to sleep (for updates over Wi-Fi); off by default |
 | `automation.dash_xs_low_battery` | *Dash XS – Low battery alert* — one notification when the battery is below 3.5 V; after charging above 3.9 V it's armed again |
 | `input_boolean.dash_xs_battery_alerted` | on once the alert has been sent, off again after charging |
 
-**From the device**: `sensor.dash_xs_esps3_battery_voltage` (V),
-`sensor.dash_xs_esps3_battery_level` (%), `light.dash_xs_esps3_rgb_led`
-(the board's LED), `button.dash_xs_esps3_restart_esp`.
+**From the device** (*Dash XS*): `sensor.dash_xs_esps3_battery_voltage` (V),
+`sensor.dash_xs_esps3_battery_level` (%), *Wi-Fi signal* (dBm), *Wake:
+connected after* and *Wake: total* (seconds per wake, sent right before
+sleep), `light.dash_xs_esps3_rgb_led` (the board's LED),
+`button.dash_xs_esps3_restart_esp`.
 
 ## Battery
 
@@ -115,7 +126,11 @@ esphome/
   secrets.example.yaml
   fonts/                    # Ubuntu Medium, Material Design Icons
 packages/
-  dash_xs.yaml              # tomorrow's forecast, low-battery notification
+  dash_xs.yaml              # tomorrow's forecast, keep awake, low-battery notification
+tools/
+  render_preview.py         # draws docs/preview.png from the page layout
+docs/
+  preview.png
 PCB/                        # schematic, Gerber, EasyEDA project
 3D Files/                   # case
 ```
@@ -129,6 +144,13 @@ config without a device:
 
 ```bash
 esphome config esphome/dash-xs-esps3.yaml
+```
+
+After a layout change, update `tools/render_preview.py` to match and redraw
+the preview (needs Pillow):
+
+```bash
+python tools/render_preview.py
 ```
 
 ## License
