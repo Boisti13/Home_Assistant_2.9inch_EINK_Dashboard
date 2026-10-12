@@ -183,7 +183,17 @@ script:
       - lambda: "id(page_drawn) = true;"
       - logger.log: "🖼️ Refreshing display."
       - component.update: epaper_display
-      - delay: 4s  # let the panel finish its full refresh before power-down
+      # The driver only starts the refresh. Wait until the panel's BUSY line
+      # (GPIO5, high while refreshing) drops before sleeping: in deep sleep the
+      # pins float and could cut the refresh short.
+      - delay: 100ms
+      - wait_until:
+          condition:
+            lambda: "return gpio_get_level(GPIO_NUM_5) == 0;"
+          timeout: 5s
+      - logger.log:
+          format: "🖼️ Panel done after %.1f s awake"
+          args: ["millis() / 1000.0f"]
       - script.execute: go_to_sleep
 
   - id: go_to_sleep

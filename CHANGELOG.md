@@ -44,6 +44,7 @@ The ESP32-S3 version, as it has been running since October 2026.
 - `channel_colors` instead of the deprecated `rgb_order` for the LED.
 - OTA uploads are encrypted with the API key instead of using a separate password (saves about 3.5 KB of flash and RAM).
 - The page is drawn once per wake, also while Keep awake is on.
+- After drawing, it waits for the panel's BUSY line instead of a fixed 4 seconds, then sleeps — a full refresh takes about 2–3 s. Every wake does a full refresh (the driver starts fresh after deep sleep), so no ghosting.
 
 ## 2025-03 — first version (ESP32-C3, not tagged)
 

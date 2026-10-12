@@ -43,7 +43,7 @@ sensor.forecast_next_day  ◀── packages/      waits until every value has a
 
 On each wake the device connects with a fixed IP address (no DHCP), waits
 until every Home Assistant value has arrived (usually 3 to 6 seconds after
-waking), draws the page and sleeps 4 seconds later, once the panel is done. If something is missing after 40 s
+waking), draws the page and sleeps as soon as the panel reports (BUSY line) that the refresh is done. If something is missing after 40 s
 it draws anyway, with **!** at the bottom right. Without a connection to
 Home Assistant it doesn't draw at all — the last page stays on the screen —
 and tries again at the next hour.
