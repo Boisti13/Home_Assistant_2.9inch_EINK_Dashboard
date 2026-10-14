@@ -12,9 +12,10 @@ The 2.9" e-paper dashboard (device `dash-xs-esps3`, ESP32-S3).
 - **What runs is the copy in Home Assistant**:
   `/homeassistant/esphome/dash-xs-esps3.yaml` (+ `fonts/`, shared with other
   devices) and `/config/packages/dash_xs.yaml`. Keep repo and HA identical:
-  edit, copy to HA (back up first: ESPHome files as
-  `<file>.bak-<timestamp>` next to them, packages into `/config/backup_yaml/`),
-  commit. The one intended difference: the low-battery automation's notify
+  edit, copy to HA (back up first, never next to the file: ESPHome files to
+  `/config/project-backups/esphome/<file>.bak-<timestamp>`, the package to
+  `/config/project-backups/home-assistant/dash_xs.yaml.bak-<timestamp>`, since
+  a `.yaml` copy inside `packages/` would be loaded as a package), commit. The one intended difference: the low-battery automation's notify
   actions — the live package notifies the owner's phone and Telegram, the repo
   uses `notify.notify`.
 - After changing the package: `ha core check`, then reload templates /

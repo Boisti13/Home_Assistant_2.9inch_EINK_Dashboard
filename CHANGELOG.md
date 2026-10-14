@@ -6,6 +6,7 @@ All notable changes, newest first. Versions follow [semantic versioning](https:/
 
 ### Under the hood
 - Config checks run on the ESPHome build server (`claude-setup/scripts/esphome-check.sh`, see `CLAUDE.md`); `secrets.example.yaml` has a valid dummy API key so `esphome config` works with it.
+- `CLAUDE.md`: backups of the live files go to `/config/project-backups/` (`esphome/`, `home-assistant/`), as everywhere since 2026-10-12, not next to the files or into `/config/backup_yaml/`.
 
 ## v2.0.0 — 2026-10-12
 
