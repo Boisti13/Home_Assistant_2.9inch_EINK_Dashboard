@@ -19,10 +19,14 @@ The 2.9" e-paper dashboard (device `dash-xs-esps3`, ESP32-S3).
   uses `notify.notify`.
 - After changing the package: `ha core check`, then reload templates /
   automations (or *reload all YAML*), not a restart.
-- Validate locally on a copy **outside the Drive folder**, with a
-  `secrets.yaml` of dummy values (the API key must be real base64, not all
-  zeros): `~/.venvs/esphome/Scripts/esphome config dash-xs-esps3.yaml`. The
-  owner compiles and flashes through the ESPHome app.
+- **ESPHome checks run on the build server** (CT 117 `esphome-builder` on
+  pve_rptu_dev), never locally as long as pve_rptu_dev is reachable (owner,
+  2026-10-14): `bash ../claude-setup/scripts/esphome-check.sh esphome/dash-xs-esps3.yaml`
+  (add `config` to skip the compile). It sends the working tree, uncommitted
+  changes included, and uses `esphome/secrets.example.yaml` (dummy values);
+  same ESPHome as Home Assistant's app. Only if pve_rptu_dev is unreachable,
+  validate locally with a venv outside the Drive folder. The owner compiles
+  and flashes through the ESPHome app in Home Assistant.
 - Layout changes: update `tools/render_preview.py` to match and redraw
   `docs/preview.png` (`python tools/render_preview.py`, needs Pillow).
 - OTA: the owner turns on `input_boolean.dash_xs_keep_awake` before
